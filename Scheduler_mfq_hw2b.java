@@ -132,97 +132,112 @@ private Vector<TCB>[] queue = new Vector[3];
         for ( int i = 0; i < 3; i++ )
             slice[i] = 0;
 
-        while ( true ) {
-            try {
-                // get the next TCB and its thread from the highest queue
-                int level = 0;
-                for ( ; level < 3; level++ ) {
-                    if ( slice[level] == 0 ) {
-                        if ( queue[level].size( ) == 0 )
-                            continue;
-                        currentTCB = queue[level].firstElement( );
-                        break;
+            while ( true ) {
+                try {
+                    // get the next TCB and its thread from the highest queue
+                    int level = 0;
+                    for ( ; level < 3; level++ ) {
+                        if ( slice[level] == 0 ) {
+                            if ( queue[level].size( ) == 0 )
+                                continue;
+                            currentTCB = queue[level].firstElement( );
+                            break;
+                        }
+                        else {
+                            currentTCB = prevTCB;
+                            break;
+                        }
                     }
-                    else {
-                        currentTCB = prevTCB;
-                        break;
-                    }
-                }
-                if ( level == 3 )
-                    continue;
-
+                    if ( level == 3 )
+                        continue;
+    
                 // hw2b: TODO: implement the code in this if statement
-                if ( currentTCB.getTerminated( ) == true ) {
+                if (currentTCB.getTerminated() == true) {
                     // Remove this thread from queue[level]
-                    queue[level].remove( currentTCB );
-                    // Return this thread id
-                    returnTid( currentTCB.getTid( ) );
+                    synchronized (queue) {
+                        queue[level].remove(currentTCB);
+                        // Return this thread id
+                        returnTid(currentTCB.getTid());
+                    }
                     // slice[level] must be 0
                     slice[level] = 0;
                     continue;
                 }
-                current = currentTCB.getThread( );
+                current = currentTCB.getThread();
 
                 // hw2b: TODO: implement the code based on the following comment
-                if ( ( current != null ) ) {
+                if ((current != null)) {
+                    // If current is alive, resume it otherwise start it.
+                    // The same logic as Scheduler_rr.java
+                    // Just copy the logic here.
+                    if (current.isAlive())
+                        current.resume();
+                    else
+                        current.start();
+                }
+
+                // hw2b: TODO: implement the code based on the following comment
                 // Scheduler should sleep here.
                 // If current is alive, suspend it.
                 // The same logic as Scheduler_rr.java
                 // Just copy the logic here
-                    if ( current.isAlive( ) )
-                        current.resume( );
-                    else
-                        current.start( );
-                }
-
-
-                schedulerSleep( );
-
-
-                synchronized( queue ) {
-                    if ( current != null && current.isAlive( ) )
-                        current.suspend( );
+                schedulerSleep();
+                
+                synchronized(queue) {
+                    if (current != null && current.isAlive())
+                        current.suspend();
                     prevTCB = currentTCB;
-                    // queue[level].remove( currentTCB ); // rotate this TCB to the end
-                    // queue[level].add( currentTCB );
-                    // queue[0].remove(currentTCB);
-                    // queue[0].add(currentTCB);
-                    // queue[1].remove(currentTCB);
-                    // queue[1].add(currentTCB);
-                    // queue[2].remove(currentTCB);
-                    // queue[2].add(currentTCB);
 
-                // hw2b: TODO: implement the code based on the following comment
-                // This is the heart of Prog2B!!!!
-                // Update slice[level].
-                slice[level]++;
-                // if slice[level] returns to 0,
-                //   currentThread must go to the next level or
-                //   rotate back in queue[2]
+                    // hw2b: TODO: implement the code based on the following comment
+                    // This is the heart of Prog2B!!!!
+                    // Update slice[level].
+                    slice[level]++;
+                    // if slice[level] returns to 0,
+                    // currentThread must go to the next level or
+                    // rotate back in queue[2]
+                    switch (level) {
+                        case 0:
+                            if (slice[0] == 1) {
+                                slice[0] = 0;
+                                if (current.isAlive()) {
+                                    queue[0].remove(currentTCB);
+                                    queue[1].add(currentTCB);
+                                }
+                            }
+                            break;
 
-                    if (level == 0 && slice[0] == 1){
-                        slice[0] = 0;
-                        if (current.isAlive()){
-                            queue[0].remove( currentTCB );
-                            queue[1].add( currentTCB );
-                        }
-                    }
-                    else if (level ==1 && slice[1] == 2){
-                        slice[1] = 0;
-                        if (current.isAlive()){
-                            queue[1].remove( currentTCB );
-                            queue[2].add( currentTCB );
-                        }
-                    }
-                    else if (level == 2 && slice[2] == 4){
-                        slice[2] = 0;
-                        if (current.isAlive()){
-                            queue[2].remove( currentTCB );
-                            queue[2].add( currentTCB );
-                        }
+                        case 1:
+                            if (slice[1] == 2) {
+                                slice[1] = 0;
+                                if (current.isAlive()) {
+                                    queue[1].remove(currentTCB);
+                                    queue[2].add(currentTCB);
+                                }
+                            }
+                            break;
+
+                        case 2:
+                            if (slice[2] == 4) {
+                                slice[2] = 0;
+                                if (current.isAlive()) {
+                                    queue[2].remove(currentTCB);
+                                    queue[2].add(currentTCB);
+                                }
+                            }
+                            break;
+
+                        default:
+                            // No action
+                            break;
                     }
                 }
-            } catch ( NullPointerException e3 ) { };
+            } catch ( NullPointerException e3 ) { }
         }
     }
 }
+
+
+
+
+// cp Scheduler_mfq_hw2b.java Scheduler.java
+// javac Scheduler.java
