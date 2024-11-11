@@ -150,7 +150,7 @@ private Vector<TCB>[] queue = new Vector[3];
                     }
                     if ( level == 3 )
                         continue;
-    
+                        
                 // hw2b: TODO: implement the code in this if statement
                 if (currentTCB.getTerminated() == true) {
                     // Remove this thread from queue[level]
@@ -163,6 +163,7 @@ private Vector<TCB>[] queue = new Vector[3];
                     slice[level] = 0;
                     continue;
                 }
+
                 current = currentTCB.getThread();
 
                 // hw2b: TODO: implement the code based on the following comment
@@ -177,15 +178,17 @@ private Vector<TCB>[] queue = new Vector[3];
                 }
 
                 // hw2b: TODO: implement the code based on the following comment
+
                 // Scheduler should sleep here.
-                // If current is alive, suspend it.
-                // The same logic as Scheduler_rr.java
-                // Just copy the logic here
                 schedulerSleep();
-                
+
                 synchronized(queue) {
+                    // If current is alive, suspend it.
+                    // The same logic as Scheduler_rr.java
+                    // Just copy the logic here
                     if (current != null && current.isAlive())
                         current.suspend();
+
                     prevTCB = currentTCB;
 
                     // hw2b: TODO: implement the code based on the following comment
@@ -196,6 +199,7 @@ private Vector<TCB>[] queue = new Vector[3];
                     // currentThread must go to the next level or
                     // rotate back in queue[2]
                     switch (level) {
+                        //After 1 slice move to queue 1
                         case 0:
                             if (slice[0] == 1) {
                                 slice[0] = 0;
@@ -206,6 +210,7 @@ private Vector<TCB>[] queue = new Vector[3];
                             }
                             break;
 
+                        // After 2 slices move to queue 2
                         case 1:
                             if (slice[1] == 2) {
                                 slice[1] = 0;
@@ -216,6 +221,7 @@ private Vector<TCB>[] queue = new Vector[3];
                             }
                             break;
 
+                        // After 4 slices rotate within queue 2
                         case 2:
                             if (slice[2] == 4) {
                                 slice[2] = 0;
